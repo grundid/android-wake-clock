@@ -32,10 +32,8 @@ public class CountdownUpdater extends AsyncTask<Long, Long, Void> {
 			}
 			publishProgress(currentRun);
 		}
-		if (isCancelled())
+		if (!isCancelled())
 			activity.finish();
-		else
-			activity.finishWithAlarm();
 		return null;
 	}
 

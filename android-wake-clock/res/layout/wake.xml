@@ -10,7 +10,8 @@
         android:layout_height="match_parent"
         android:gravity="center_vertical|center_horizontal"
         android:text="00:00:00"
-        android:textSize="48dip"
+        android:textSize="56dip"
+        android:textColor="@color/white"
         android:textStyle="bold" />
 
     <LinearLayout

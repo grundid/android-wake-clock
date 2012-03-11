@@ -7,6 +7,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.os.Bundle;
 import android.os.PowerManager;
+import android.os.Vibrator;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.WindowManager;
@@ -23,67 +24,94 @@ public class WakeupActivity extends Activity {
 	private PowerManager.WakeLock wakeLock;
 	private PowerManager powerManager;
 	private Button stopButton;
+	private Vibrator vibrator;
+	private boolean finishWithAlarm = true;
+	private boolean alarmSet = false;
+	private boolean wakeScreen = false;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		initAddTime();
 		powerManager = (PowerManager)getSystemService(Context.POWER_SERVICE);
-		getWindow().addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED);
-		setContentView(R.layout.wake);
-		timeLabel = (TextView)findViewById(R.id.timeLabel);
-		timeLabel.setText(df.format(new Date()));
-		stopButton = (Button)findViewById(R.id.stopButton);
-		stopButton.setOnClickListener(new OnClickListener() {
+		wakeScreen = getIntent().getBooleanExtra("WAKE_SCREEN", true);
 
-			@Override
-			public void onClick(View arg0) {
-				WakeupActivity.this.finish();
-			}
-		});
+		if (wakeScreen) {
+			getWindow().addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED);
+
+			setContentView(R.layout.wake);
+			timeLabel = (TextView)findViewById(R.id.timeLabel);
+			timeLabel.setText(df.format(new Date()));
+			stopButton = (Button)findViewById(R.id.stopButton);
+			wakeLock = powerManager.newWakeLock(PowerManager.SCREEN_DIM_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP,
+					"WakeClock");
+
+			stopButton.setOnClickListener(new OnClickListener() {
+
+				@Override
+				public void onClick(View arg0) {
+					WakeupActivity.this.finishWithAlarm = false;
+					WakeupActivity.this.finish();
+				}
+			});
+		}
+		else {
+			vibrate();
+			finishWithAlarm();
+			finish();
+		}
 	}
 
 	@Override
 	protected void onResume() {
 		super.onResume();
+		finishWithAlarm = true;
+		alarmSet = false;
+		initAddTime();
+		vibrate();
 		aquireWakeLock();
-		String wakeId = getIntent().getData().toString();
-		addTime = Integer.parseInt(wakeId.substring("wakeId://".length()));
+		startCountdownUpdater();
+	}
+
+	private void startCountdownUpdater() {
 		countdownUpdater = new CountdownUpdater(this, MAX_AWAKE, timeLabel);
 		countdownUpdater.execute(new Long(0));
+	}
 
+	private void initAddTime() {
+		String wakeId = getIntent().getData().toString();
+		addTime = Integer.parseInt(wakeId.substring("wakeId://".length()));
+	}
+
+	private void vibrate() {
+		vibrator = (Vibrator)getSystemService(Context.VIBRATOR_SERVICE);
+		vibrator.vibrate(100);
 	}
 
 	@Override
 	protected void onPause() {
-		if (countdownUpdater != null)
-			countdownUpdater.cancel(true);
-		releaseWakeLock();
-		try {
-			powerManager.goToSleep(200);
-		}
-		catch (Exception e) {
-			e.printStackTrace();
-		}
+		finishCountdownUpdater();
+		if (finishWithAlarm)
+			finishWithAlarm();
 		super.onPause();
 	}
 
-	public void finishWithAlarm() {
-		long startTime = System.currentTimeMillis();
-		AlarmHandler.setWakeUpAlarm(this, startTime + (addTime * 1000), addTime);
-		finish();
-	}
-
-	private void aquireWakeLock() {
-		if (!powerManager.isScreenOn()) {
-			wakeLock = powerManager.newWakeLock(PowerManager.SCREEN_DIM_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP,
-					"Timer");
-			wakeLock.acquire();
+	private void finishCountdownUpdater() {
+		if (countdownUpdater != null) {
+			countdownUpdater.cancel(true);
+			countdownUpdater = null;
 		}
 	}
 
-	private void releaseWakeLock() {
-		if (wakeLock != null && wakeLock.isHeld())
-			wakeLock.release();
+	private synchronized void finishWithAlarm() {
+		if (!alarmSet) {
+			alarmSet = true;
+			long startTime = System.currentTimeMillis();
+			AlarmHandler.setWakeUpAlarm(this, startTime + (addTime * 1000), addTime, wakeScreen);
+		}
 	}
 
+	private void aquireWakeLock() {
+		wakeLock.acquire((MAX_AWAKE + 1) * 1000);
+	}
 }

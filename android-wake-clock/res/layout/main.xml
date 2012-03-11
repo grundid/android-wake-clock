@@ -7,17 +7,26 @@
     <TextView
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
-        android:text="Enter wake time in minutes:" />	
-    
+        android:text="Enter wake time in minutes:" />
+
     <EditText
         android:id="@+id/wakeEvery"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
-        android:inputType="number" android:text="5" />
+        android:inputType="number"
+        android:text="5" />
 
     <Button
         android:id="@+id/startWakeButton"
         android:layout_width="fill_parent"
-        android:layout_height="wrap_content" android:text="Start" />
+        android:layout_height="wrap_content"
+        android:text="Start" />
+
+    <CheckBox
+        android:id="@+id/wakeScreen"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:checked="true"
+        android:text="turn on screen" />
 
 </LinearLayout>
