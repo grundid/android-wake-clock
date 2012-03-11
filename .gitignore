@@ -1,0 +1,8 @@
+**.project
+**.classpath
+**.settings
+/**/target/
+/**/bin
+target
+application/gen**
+application-it/gen**
