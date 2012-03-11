@@ -4,5 +4,5 @@
 /**/target/
 /**/bin
 target
-application/gen**
-application-it/gen**
+gen**
+gen**
